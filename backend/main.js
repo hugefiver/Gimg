@@ -65,4 +65,4 @@ app.get('*', (req, res) => {
     res.redirect('/');
 });
 
-app.listen(50422, () => console.log('Start server at 50422 port.'));
+app.listen(8080, () => console.log('Start server at 8080 port.'));
