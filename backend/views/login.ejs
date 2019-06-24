@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+    <%- include('include.ejs') %>
+    <style>
+        #container::before, #container::after {
+            box-sizing: border-box;
+            height: 24px;
+            min-height: 169px;
+            display: block;
+            flex-grow: 1;
+        }
+        #warning, #container {
+            padding: 20px auto;
+        }
+        #warning {
+            width: 100%;
+            position: absolute;
+            top: 60px;
+            padding: 0 20px;
+        }
+        #warning > * {
+            border-radius: 16px;
+            box-shadow: 0 3px 1px -2px rgba(0,0,0,.2),
+                0 2px 2px 0 rgba(0,0,0,.14),
+                0 1px 5px 0 rgba(0,0,0,.12);
+        }
+        #container {
+            max-width: 540px;
+            min-width: 360px;
+            /*border: 1px #3e3e3e solid;*/
+            padding: 82px 65px ;
+            border-radius: 16px;
+        }
+    </style>
+</head>
+<body>
+    <v-app id="main-app" >
+        <div style="display: flex; align-items: center; justify-content: center; flex-direction: column; height: 100vh;">
+        <div id="warning">
+            <% if (isLogined) { %>
+                <v-alert :value="true" color="info">
+                    <p>已登录: <%= user.name %></p>
+                    <v-btn id="logout" href="#" @click="logout()">退出登录</v-btn>
+                    <v-btn id="logout" href="#" @click="location.href = '/'">返回首页</v-btn>
+                </v-alert>
+            <% } %>
+        </div>
+
+        <v-card id="container">
+            <v-form id="login-form" ref="form">
+                <v-text-field v-model="id" label="用户名" :rules="notEmpty" prepend-icon="account_box" required> </v-text-field>
+                <v-text-field v-model="password" label="密码" type="password" :rules="notEmpty" prepend-icon="security" required> </v-text-field> <br>
+                <v-btn @click="login">登录</v-btn>
+            </v-form>
+        </v-card>
+        </div>
+        <v-toolbar color="aqua" style="position: fixed">
+            <v-toolbar-title class="dark--text" style="margin-left: 10px">Login</v-toolbar-title>
+            <div style="margin: auto"> </div>
+            <v-toolbar-title style="font-size: 0.6em">{{time}}</v-toolbar-title>
+        </v-toolbar>
+    </v-app>
+
+
+    <script>
+        var loginForm = new Vue({
+            el: '#main-app',
+            data: {
+                id: '',
+                password: '',
+                notEmpty: [
+                    v => !v ? '不能为空' : ''
+                ],
+                time: ''
+            },
+            methods: {
+                login: function() {
+                    if (this.id && this.password) {
+                        axios.post('/api/login', {
+                            id: this.id,
+                            password: this.password
+                        }).then(res => {
+                            if (res.data.err === 0) {
+                                alert(res.data.msg);
+                                localStorage.setItem('id', this.id)
+                                window.location.href = '/'
+                            } else {
+                                alert(res.data.msg);
+                            }
+                        })
+                    } else {
+                        alert('账号密码不能为空。')
+                    }
+                },
+                getTimeInfo: function () {
+                    let time = new Date();
+                    let date = [time.getFullYear(),
+                            time.getMonth(),
+                            time.getDate()].join("-")
+                        + " " + [time.getHours(),
+                            time.getMinutes(),
+                            time.getSeconds()].join(":");
+                    let h = time.getHours();
+                    let oha;
+                    if (h < 12 && h >= 8)
+                        oha = "早上";
+                    else if (h < 14)
+                        oha = "中午";
+                    else if (h < 18)
+                        oha = "下午";
+                    else
+                        oha = "晚上";
+                    return date + " " + oha + "好";
+                },
+                renewTime: function () {
+                    this.time = this.getTimeInfo();
+                    setTimeout(this.renewTime, 500)
+                }
+            },
+            mounted: function() {
+                this.renewTime();
+                let id = localStorage.getItem('id');
+                console.log(id)
+                if (id) {
+                    this.id = id
+                }
+            }
+        })
+
+        function logout() {
+            axios.get('/api/logout').then(res => {
+                if (res.data.err === 0)
+                    location.reload();
+                else
+                    alert('登出失败: ' + res.data.msg);
+            }).catch(e => {
+                alert('Network Error:', e);
+            })
+        }
+    </script>
+</body>
+</html>

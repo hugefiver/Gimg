@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:v-slot="http://www.w3.org/1999/XSL/Transform">
+<head>
+    <meta charset="UTF-8">
+    <title>Index</title>
+    <%- include('include.ejs') %>
+</head>
+<body>
+<v-app id="main-app">
+    <div style="display: flex; align-items: center; justify-content: center; flex-direction: column;">
+        <v-card style="top: 75px; position: absolute; min-height: 88%; width: 95%;">
+            <div id="upload" v-show="page === 'upload'">
+                <v-layout align-center justify-center column fill-height>
+                    <img :src="imageUrl" width="45%" v-if="imageUrl"/>
+                    <v-text-field label="选择图片" @click='pickFile' v-model='imageName' prepend-icon='attach_file'>
+                    </v-text-field>
+                    <input id="input-file" type="file" style="display: none" @change="onFilePicked" >
+                    <v-text-field label="图片链接" v-model="picURL" v-if="uploaded" prepend-icon="code" readonly> </v-text-field>
+                    <v-btn @click="upload">上传</v-btn>
+                </v-layout>
+            </div>
+
+            <div id="pics" v-show="page === 'pictures'" v-if="user">
+                <v-layout align-center justify-start column fill-height>
+                    <v-layout align-center justify-center row>
+                        <v-text-field label="从...时间" v-model="getPics.after" type="datetime-local" prepend-icon="event">
+                        </v-text-field>
+                        <v-text-field label="到...时间" v-model="getPics.before" type="datetime-local" prepend-icon="event">
+                        </v-text-field>
+                    </v-layout>
+
+                    <v-layout align-center justify-center row>
+                        <v-text-field label="用户ID" v-model="getPics.name" prepend-icon="face" :disabled="user.level<2"> </v-text-field>
+                        <v-btn @click="getPicsOfUser()">查询图片</v-btn>
+                    </v-layout>
+                    <v-container fluid grid-list-sm>
+                        <v-layout row wrap justify-space-around >
+                            <v-flex v-for="item in getPics.images" xs4>
+                                <v-card style="margin: 5px">
+                                    <img :src="getPicURL(item.name)" class="image" width="100%">
+                                    <pre>{{item.name}}</pre>
+                                </v-card>
+                            </v-flex>
+                        </v-layout>
+                    </v-container>
+                </v-layout>
+            </div>
+
+            <div id="admin" v-show="page === 'admin'" > <!--v-if="user && user.level >= 2"-->
+                <v-layout align-center justify-center column fill-height >
+                    <v-layout align-center justify-start column fill-height v-if="user && user.level >= 2">
+                        <v-text-field label="要删除的图片名称" v-model="ddd" prepend-icon="delete" require>
+                        </v-text-field>
+                        <v-btn @click="deletePic()">删除</v-btn>
+                    </v-layout>
+
+                    <v-layout align-center justify-center column fill-height v-if="user && user.level >= 2">
+                        <v-layout align-center justify-center row fill-height>
+                            <v-text-field label="要更改的用户的ID" v-model="cN.id" prepend-icon="face" require>
+                            </v-text-field>
+                            <v-text-field label="更改为的名称" v-model="cN.name" prepend-icon="picture_in_picture" require>
+                            </v-text-field>
+                        </v-layout>
+                        <v-btn @click="changeName()">更改用户昵称</v-btn>
+                    </v-layout>
+
+                    <!--v-layout align-center justify-center column fill-height>
+                        <v-layout align-center justify-center row fill-height>
+                            <v-text-field label="要更改的图片" v-model="cP.from" prepend-icon="face" require>
+                            </v-text-field>
+                            <v-text-field label="更改为图片" v-model="cP.to" prepend-icon="picture_in_picture" require>
+                            </v-text-field>
+                        </v-layout>
+                        <v-btn @click="changePic()">更改图片</v-btn>
+                    </v-layout -->
+
+                    <v-layout align-center justify-center column fill-height>
+                        <v-layout align-center justify-center row fill-height>
+                            <v-text-field label="图片" v-model="watchtime.pic" prepend-icon="image" require>
+                            </v-text-field>
+                            <v-text-field
+                                    label="时间" v-model="watchtime.time"
+                                    type="datetime-local"
+                                    prepend-icon="calendar_today"
+                                    :readonly="!user || user.level < 2"
+                                    require>
+                            </v-text-field>
+                        </v-layout>
+                        <v-layout align-center justify-center row fill-height>
+                            <v-btn @click="getTime()">查看时间</v-btn>
+                            <v-btn @click="changeTime()" :disabled="!user || user.level < 2">更改时间</v-btn>
+                        </v-layout>
+                    </v-layout>
+
+                    <!--v-layout align-center justify-center column fill-height>
+                        <v-layout align-center justify-center row fill-height>
+                            <v-text-field label="更改图片" v-model="ccc.pic" prepend-icon="image" require>
+                            </v-text-field>
+                            <v-text-field label="更改为时间" v-model="ccc.time" type="datetime-local" prepend-icon="calendar_today" require>
+                            </v-text-field>
+                        </v-layout>
+                        <v-btn @click="changeTime()">更改时间</v-btn>
+                    </v-layout--->
+
+                    <v-layout align-center justify-center column fill-height>
+                        <v-layout align-center justify-center row fill-height>
+                            <v-text-field label="图片" v-model="picHot.pic" prepend-icon="image" require>
+                            </v-text-field>
+                            <v-text-field label="热度" v-model="picHot.hot" type="number"
+                                          :readonly="!user || user.level < 2" prepend-icon="whatshot" require>
+                            </v-text-field>
+                        </v-layout>
+                        <v-layout align-center justify-center row fill-height>
+                            <v-btn @click="getHot()">查看热度</v-btn>
+                            <v-btn @click="changeHot()" :disabled="!user || user.level < 2">更改热度</v-btn>
+                        </v-layout>
+
+                    </v-layout>
+
+                    <v-layout align-center justify-center column fill-height>
+                        <v-layout align-center justify-center row fill-height>
+                            <v-text-field label="图片" v-model="picM.pic" prepend-icon="image" require>
+                            </v-text-field>
+                            <v-text-field label="MD5" v-model="picM.md5"
+                                          :readonly="!user || user.level < 2" prepend-icon="menu" require>
+                            </v-text-field>
+                        </v-layout>
+                        <v-layout align-center justify-center row fill-height>
+                            <v-btn @click="getMD5()">查看文件</v-btn>
+                            <v-btn @click="changeMD5()" :disabled="!user || user.level < 2">更改文件</v-btn>
+                        </v-layout>
+
+                    </v-layout>
+
+
+                    <!--v-layout align-center justify-center column fill-height>
+                        <v-layout align-center justify-center row fill-height>
+                            <v-text-field label="要更改的图片" v-model="ss.pic" prepend-icon="image" require>
+                            </v-text-field>
+                            <v-text-field label="更改为的热度" v-model="ss.hot" type="number" prepend-icon="whatshot" require>
+                            </v-text-field>
+                        </v-layout>
+                        <v-btn @click="changeHot()">更改热度</v-btn>
+                    </v-layout-->
+
+                    <v-layout align-center justify-center column fill-height>
+                        <v-layout align-center justify-center row fill-height>
+                            <v-text-field label="名称" v-model="addPics.name" prepend-icon="image" require>
+                            </v-text-field>
+                            <v-text-field label="MD5" v-model="addPics.md5"
+                                          :readonly="!user || user.level < 2" prepend-icon="menu" require>
+                            </v-text-field>
+
+                        </v-layout>
+                        <v-layout align-center justify-center row fill-height>
+                            <v-text-field label="热度" v-model="addPics.hot" type="number"
+                                          :readonly="!user || user.level < 2" prepend-icon="whatshot" require>
+                            </v-text-field>
+                            <v-text-field
+                                    label="时间" v-model="addPics.time"
+                                    type="datetime-local"
+                                    prepend-icon="calendar_today"
+                                    :readonly="!user || user.level < 2"
+                                    require>
+                        </v-layout>
+
+                        <v-layout align-center justify-center row fill-height>
+                            <!--v-btn @click="getPic0()">查看图片</v-btn-->
+                            <v-btn @click="addPic0()" :disabled="!user || user.level < 2">添加图片</v-btn>
+                        </v-layout>
+                    </v-layout>
+
+                </v-layout>
+
+            </div>
+        </v-card>
+    </div>
+
+    <v-toolbar color="aqua" style="position: fixed">
+        <v-flex xs2>
+            <v-select flat :items="allowPages" item-value="id" item-text="name" v-model="page"> </v-select>
+        </v-flex>
+        <div style="margin: auto"> </div>
+        <div v-if="user">
+            <v-btn color="light-blue" @click="location.reload()" style="font-size: 0.6em">
+                您已登录: {{ user.name }}
+            </v-btn>
+            <v-btn @click="logout()">
+                登出
+            </v-btn>
+        </div>
+        <div v-else>
+            <v-btn disabled style="font-size: 0.6em">
+                游客账户
+            </v-btn>
+            <v-btn @click="location.href='/login'">
+                登录
+            </v-btn>
+        </div>
+    </v-toolbar>
+</v-app>
+
+<script>
+    function getTimeString(time) {
+        return time.toISOString().match(/^(.*)\./)[1]
+    }
+    var app = new Vue({
+        el: '#main-app',
+        data: {
+            user: null,
+            page: 'upload',
+            allowPages: [],
+            imageName: '',
+            imageUrl: '',
+            picURL: '',
+            uploaded: false,
+            getPics: {
+                name: '',
+                before: new Date('2999-1-1').toISOString().match(/^(.*)\./)[1],
+                after: new Date('1971-1-1').toISOString().match(/^(.*)\./)[1],
+                images: []
+            },
+            cN: {
+                id: '',
+                name: ''
+            },
+            ddd: '',
+            picHot: {
+                pic: '',
+                hot: '0'
+            },
+            watchtime: {
+                pic: '',
+                time: getTimeString(new Date())
+            },
+            picM: {
+                pic: '',
+                md5: ''
+            },
+            addPics: {
+                md5: '',
+                hot: '0',
+                time: getTimeString(new Date()),
+                name: ''
+            }
+        },
+        mounted: function() {
+            this.checkLoginStatus(function () {
+                this.allowPages.push({id: 'upload', name:'上传文件'});
+                if (this.user) {
+                    this.allowPages.push({id: 'pictures', name: '查看图片'});
+                    this.allowPages.push({id: 'admin', name: '管理'})
+                }
+                this.getPics.name = this.user.id;
+                this.ccc.time = new Date().toISOString().match(/^(.*)\./)[1]
+            }.bind(this));
+        },
+        computed: {
+        },
+        methods: {
+            addPic0: function() {
+                let md5 = this.addPics.md5;
+                let time = this.addPics.time;
+                let name = this.addPics.name;
+                let hot = this.addPics.hot;
+                if (!this.addPics.md5 || !this.addPics.time || !this.addPics.name) {
+                    alert('不能为空')
+                } else if (hot > 10 || hot < 0) {
+                    alert('hot: 0.0~10.0')
+                } else if (new Date(time).getTime() > new Date().getTime()) {
+                    alert('输入时间超过当前时间')
+                } else {
+                    axios.post('/api/admin/add', {
+                        md5,
+                        time,
+                        name,
+                        hot
+                    }).then(res => {
+                        if (res.data.err === 0) {
+                            alert('添加成功')
+                        } else {
+                            alert(res.data.msg)
+                        }
+                    })
+                }
+            },
+            getMD5: function() {
+                let pic = this.picM.pic;
+                if (pic === '') {
+                    alert('不能为空。')
+                } else {
+                    axios.get('/i/' + pic + '/md5').then(res => {
+                        if (res.data.err === 0){
+                            this.picM.md5 = res.data.md5;
+                        } else {
+                            alert(res.data.msg)
+                        }
+                    })
+                }
+            },
+            changeMD5: function () {
+                let patt = /^[0123456789abcdefABCDEF]{32}$/
+                let pic = this.picM.pic;
+                let md5 = this.picM.md5;
+
+                if (pic === '') {
+                    alert('图片不能为空。')
+                } else if (!patt.test(md5)) {
+                    alert('MD5格式错误。')
+                } else {
+                    axios.post('/api/admin/changeMD5', {
+                        pic: pic,
+                        md5: md5
+                    }).then(res => {
+                        if (res.data.err === 0) {
+                            alert('更改成功.')
+                        } else {
+                            alert(res.data.msg)
+                        }
+                    }).catch(err => alert('Network Error:', err))
+                }
+            },
+            getTime: function() {
+                let pic = this.watchtime.pic;
+                if (pic === '') {
+                    alert('不能为空')
+                } else {
+                    axios.get('/i/' + pic + '/time').then(res => {
+                        if (res.data.err === 0) {
+                            this.watchtime.time = getTimeString(new Date(res.data.time))
+                        } else {
+                            alert(res.data.msg);
+                        }
+                    })//.catch(e => alert('Network Error:', e))
+                }
+            },
+            changeTime: function() {
+                if (this.watchtime.pic === '' || this.watchtime.time === '') {
+                    alert('不能为空')
+                } else if (this.watchtime.time < new Date('1971-1-1').getTime() || this.watchtime.time < new Date().getTime()) {
+                    alert('请输入 1970-1-1 至今的时间')
+                } else {
+                    axios.post('/api/admin/changeTime', {
+                        pic: this.watchtime.pic,
+                        time: this.watchtime.time
+                    }).then(res => {
+                        if (res.data.err === 0 ) {
+                            alert('更改成功')
+                        } else {
+                            alert(res.data.msg)
+                        }
+                    }).catch(e => alert('Network Error:', e))
+                }
+            },
+            changeHot: function() {
+                let hot = this.picHot.hot;
+                if (this.picHot.pic === '') {
+                    alert('图片不能为空')
+                } else if (hot >10 || hot < 0){
+                    alert('热度不合法: 0.0~10.0')
+                } else {
+                    axios.post('/api/admin/changeHot', {
+                        pic: this.picHot.pic,
+                        hot: hot
+                    }).then(res => {
+                        if (res.data.err === 0) {
+                            alert('更改成功')
+                        } else {
+                            alert(res.data.msg)
+                        }
+                    }).catch(err => alert("连接出错:", err))
+                }
+            },
+            getHot: function() {
+                if (this.picHot.pic === '') {
+                    alert('不能为空');
+                    return
+                }
+                axios.get('/i/' + this.picHot.pic + '/hot').then(res => {
+                    if (res.data.err === 0) {
+                        this.picHot.hot = res.data.hot
+                    } else {
+                        alert(res.data.msg)
+                    }
+                })
+            },
+            checkLoginStatus: function (callback) {
+                axios.get('/api/check').then((res) => {
+                    if (res.data.err === 0) {
+                        this.user = res.data.user;
+                    } else if (res.data.err === 2) {
+                        console.log('获取登录账户时遇到不可预期错误.')
+                    }
+                    if (callback) {
+                        callback()
+                    }
+                }).catch(e => {
+                    console.log('Network Error:', e)
+                })
+            },
+            logout: function () {
+                axios.get('/api/logout').then(res => {
+                    if (res.data.err === 0) {
+                        console.log('Logout Success.');
+                        location.href = '/';
+                    } else {
+                        alert('登出失败.')
+                    }
+                })
+            },
+            onFilePicked (e) {
+                const files = e.target.files
+                if(files[0] !== undefined) {
+                    this.imageName = files[0].name
+                    if(this.imageName.lastIndexOf('.') <= 0) {
+                        return
+                    }
+                    const fr = new FileReader ()
+                    fr.readAsDataURL(files[0])
+                    fr.addEventListener('load', () => {
+                        this.imageUrl = fr.result
+                        this.imageFile = files[0]
+                    })
+                } else {
+                    this.imageName = ''
+                    this.imageFile = ''
+                    this.imageUrl = ''
+                }
+            },
+            pickFile: function() {
+                document.querySelector('#input-file').click()
+            },
+            upload: function upload() {
+                let files = document.getElementById('input-file').files;
+
+                if (files.length > 0) {
+                    if (files[0].name.match(/^.*\.(jpg|jpeg|png|bmp|ico|webp|gif)$/)) {
+                        let formData = new FormData();
+                        formData.append('file', files[0]);
+                        axios.post('/api/upload', formData).then(res => {
+                            if (res.status === 200) {
+                                if (res.data.err > 0) {
+                                    alert("res.data.msg");
+                                } else {
+                                    this.uploaded = true;
+                                    this.picURL = "http://" + location.host + "/i/" + res.data.picName;
+                                }
+                            } else {
+                                alert('上传失败，HTTP错误码:', res.data.status)
+                            }
+                        }).catch(err => alert("连接出错:", err))
+                    } else {
+                        alert("不支持该类型文件。")
+                    }
+                } else {
+                    alert("请选择文件。")
+                }
+            },
+            getPicsOfUser: function () {
+                if (this.getPics.name === '') {
+                    alert('不能为空。')
+                    return;
+                }
+                axios.get('/api/admin/' + this.getPics.name + '/pics', {
+                    params: {
+                        before: new Date(this.getPics.before).getTime(),
+                        after: new Date(this.getPics.after).getTime()
+                    }
+                }).then(res => {
+                    if (res.data.err === 0) {
+                        let d = res.data.pics;
+                        let a = [];
+                        for (let k in d) {
+                            a.push({name: k, time: new Date(d[k])})
+                        }
+                        this.getPics.images = a;
+                    } else {
+                        alert('获取失败:', res.data.msg)
+                    }
+                })//.catch(e => alert('网络错误:', e))
+            },
+            getPicURL: function (name) {
+                return 'http://' + location.host + '/i/' + name;
+            },
+            getTwo: function () {
+                let a = [];
+                let t = [];
+                let index = 0;
+                let imgs = this.getPics.images;
+                for (let v of imgs) {
+                    t.push(v);
+                    if (index % 2) {
+                        a.push(t);
+                        t = [];
+                    }
+                    index ++;
+                }
+                if (t.length)
+                    a.push(t);
+                return a;
+            },
+            deletePic: function () {
+                let pic = this.ddd;
+                if (pic === '') {
+                    alert('不能为空.');
+                    return;
+                }
+                axios.post('/api/admin/delete/pic', {
+                    pics: [pic]
+                }).then(res => {
+                    if (res.data.err === 0) {
+                        alert('删除成功。')
+                    }
+                }).catch(e => alert('网络连接错误:', e))
+            },
+            changeName: function () {
+                let id = this.cN.id;
+                let name = this.cN.name;
+
+                if (id==='' || name==='') {
+                    alert('ID和名称不能为空。')
+                } else {
+                    axios.post('/api/admin/' + id + '/changeName', {
+                        name: name
+                    }).then(res => {
+                        if (res.data.err === 0) {
+                            alert('更改成功。')
+                        } else {
+                            alert(res.data.msg)
+                        }
+                    }).catch(e => alert('网络错误:', e))
+                }
+            }
+        }
+    })
+</script>
+</body>
+</html>

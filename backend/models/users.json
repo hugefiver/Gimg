@@ -1,0 +1,14 @@
+{
+    "guest": {
+        "name": "Guest",
+        "password": "",
+        "level": 0,
+        "pics": []
+    },
+    "admin": {
+        "name": "Admin",
+        "password": "$qs7$3FCAA4EA38E3B5C17CC9E9C1EEA19207",
+        "level": 2,
+        "pics": []
+    }
+}
