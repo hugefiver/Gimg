@@ -4,8 +4,8 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
-
 	"github.com/hugefiver/Gimg/model"
+	"github.com/hugefiver/Gimg/route"
 	apiRoute "github.com/hugefiver/Gimg/route/api"
 )
 
@@ -25,6 +25,7 @@ func main() {
 	router.Use(gin.Recovery())
 
 	{
+		router.GET("/i/:name", route.GetImage)
 		router.POST("/api/upload", apiRoute.UploadImage)
 	}
 
