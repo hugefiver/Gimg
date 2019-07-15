@@ -7,5 +7,6 @@ type Image struct {
     Ext string `gorm:"size:10;not null"`
     UploadTime time.Time
     Uploader string
-    File File
+    File File  `gorm:"ForeignKey:FileMd5;Association_ForeignKey:Md5"`
+    FileMd5 string
 }
