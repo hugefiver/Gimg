@@ -7,8 +7,8 @@ import (
 
 var DB *gorm.DB
 
-func ConnectDB(url string) (*gorm.DB, error) {
-	d, err := gorm.Open("sqlite3", url)
+func ConnectDB(dbType, url string) (*gorm.DB, error) {
+	d, err := gorm.Open(dbType, url)
 	if err != nil {
 		return nil, err
 	}

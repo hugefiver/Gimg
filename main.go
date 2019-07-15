@@ -12,7 +12,7 @@ import (
 func main() {
 	//gin.SetMode(gin.ReleaseMode)
 
-	db, err := model.ConnectDB("./db.database")
+	db, err := model.ConnectDB("sqlite3", "./db.database")
 	if err != nil {
 		log.Fatal("Connect Database Error:", err)
 	}
