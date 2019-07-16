@@ -51,7 +51,7 @@ func UploadImage(c *gin.Context) {
 			fileModel := model.File{
 				Md5: hs,
 			}
-			if model.DB.Find(&fileModel).RecordNotFound() {
+			if model.DB.Where("md5 = ?", hs).First(&fileModel).RecordNotFound() {
 				fileModel.Data = bs
 				model.DB.Create(&fileModel)
 			}
