@@ -18,4 +18,5 @@ type Image struct {
 	UploadTime time.Time
 	Uploader   string
 	FileMd5    string
+	File       File `gorm:"foreignkey:FileMd5"`
 }
