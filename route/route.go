@@ -28,7 +28,7 @@ func GetImage(c *gin.Context) {
 		image := model.Image{
 			ImgId: id,
 		}
-		if !model.DB.Where(&image).First(&image).RecordNotFound() {
+		if !model.DB.Where(&image).Preload("File").First(&image).RecordNotFound() {
 			c.Data(200, typeMap[image.Ext], image.File.Data)
 			return
 		}
